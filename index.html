@@ -426,6 +426,185 @@
         const downloadBtn = document.getElementById('downloadBtn');
         const transformBtnText = document.getElementById('transformBtnText');
 
+        function switchToSingleMode() {
+            isBatchMode = false;
+            singleModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 rounded-lg hover:bg-cyan-500/30 transition-all';
+            batchModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all';
+            excelSection.classList.add('hidden');
+            singleSection.classList.remove('hidden');
+            batchProgress.classList.add('hidden');
+            downloadBtn.classList.add('hidden');
+            transformBtnText.textContent = 'Transform Content';
+            
+            // Reset results display
+            results = [];
+            renderResults();
+            diagnostics.classList.add('hidden');
+            jsonResponse.textContent = 'No response data yet...';
+        }
+
+        function switchToBatchMode() {
+            isBatchMode = true;
+            batchModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-500/30 transition-all';
+            singleModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all';
+            singleSection.classList.add('hidden');
+            excelSection.classList.remove('hidden');
+            transformBtnText.textContent = 'Process Excel File';
+            
+            // Reset batch results
+            batchResults = [];
+            currentBatchIndex = 0;
+            downloadBtn.classList.add('hidden');
+        }
+
+        function handleFileSelect(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showToast('Error', 'Please select an Excel file (.xlsx or .xls)', 'destructive');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    // Validate format
+                    if (jsonData.length < 2 || !jsonData[0] || jsonData[0][0]?.toLowerCase() !== 'sinopsis') {
+                        showToast('Error', 'Excel format invalid. Column A1 must contain "sinopsis"', 'destructive');
+                        return;
+                    }
+
+                    // Extract synopses (max 100)
+                    excelData = [];
+                    for (let i = 1; i < Math.min(jsonData.length, 101); i++) {
+                        if (jsonData[i] && jsonData[i][0] && jsonData[i][0].trim()) {
+                            excelData.push({
+                                row: i + 1,
+                                synopsis: jsonData[i][0].trim()
+                            });
+                        }
+                    }
+
+                    if (excelData.length === 0) {
+                        showToast('Error', 'No valid synopses found in the Excel file', 'destructive');
+                        return;
+                    }
+
+                    // Show file info
+                    fileName.textContent = file.name;
+                    fileDetails.textContent = `${excelData.length} synopses loaded`;
+                    fileInfo.classList.remove('hidden');
+                    
+                    showToast('Success', `Loaded ${excelData.length} synopses from Excel file`);
+                } catch (error) {
+                    showToast('Error', 'Could not read Excel file: ' + error.message, 'destructive');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function processBatch() {
+            if (excelData.length === 0) {
+                showToast('Error', 'Please upload an Excel file first', 'destructive');
+                return;
+            }
+
+            const endpoint = endpointInput.value.trim();
+            if (!endpoint) {
+                showToast('Error', 'Please define the API endpoint', 'destructive');
+                return;
+            }
+
+            // Reset batch state
+            batchResults = [];
+            currentBatchIndex = 0;
+            
+            // Show progress
+            batchProgress.classList.remove('hidden');
+            transformBtn.disabled = true;
+            transformBtn.innerHTML = `
+                <div class="w-4 h-4 animate-spin mr-2">
+                    <i data-lucide="loader-2" class="w-4 h-4"></i>
+                </div>
+                Processing Batch...
+            `;
+
+            startTimer();
+
+            // Process each synopsis
+            for (let i = 0; i < excelData.length; i++) {
+                currentBatchIndex = i;
+                const item = excelData[i];
+                
+                // Update progress
+                const progress = ((i + 1) / excelData.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${i + 1}/${excelData.length}`;
+                currentProcessing.textContent = `Processing row ${item.row}: ${item.synopsis.substring(0, 50)}...`;
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ synopsis: item.synopsis }),
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        batchResults.push({
+                            row: item.row,
+                            originalSynopsis: item.synopsis,
+                            outputs: data.outputs || {},
+                            outputs_es: data.outputs_es || {},
+                            lengths_actual: data.lengths_actual || {},
+                            lengths_actual_es: data.lengths_actual_es || {},
+                            tokens_en: data.tokens_en || {},
+                            tokens_es: data.tokens_es || {},
+                            token_totals_all: data.token_totals_all || {},
+                            success: true
+                        });
+                    } else {
+                        batchResults.push({
+                            row: item.row,
+                            originalSynopsis: item.synopsis,
+                            error: `HTTP ${response.status}`,
+                            success: false
+                        });
+                    }
+                } catch (error) {
+                    batchResults.push({
+                        row: item.row,
+                        originalSynopsis: item.synopsis,
+                        error: error.message,
+                        success: false
+                    });
+                }
+
+                // Small delay to prevent overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // Complete processing
+            stopTimer();
+            transformBtn.disabled = false;
+            transformBtn.innerHTML = `
+                <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                Process Excel File
+            `;
+            
+            currentProcessing.textContent = 'Batch processing completed!';
+            downloadBtn.classList.remove('hidden');
+            
+            const successCount = batchResults.filter(r => r.success).length;
+            showToast('Batch Complete', `Processed ${batchResults.length} synopses (${successCount} successful)`);
+            
+            lucide.createIcons();
+        }
+
         function startTimer() {
             timerBadge.classList.remove('hidden');
             timerBadge.classList.add('flex');
