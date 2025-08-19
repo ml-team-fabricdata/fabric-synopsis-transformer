@@ -228,7 +228,7 @@
                                         </div>
                                         <div>
                                             <p class="text-white font-semibold">Drop Excel file here or click to browse</p>
-                                            <p class="text-gray-400 text-sm mt-1">Column A should contain "sinopsis" header, data from A2 (max 100 rows)</p>
+                                            <p class="text-gray-400 text-sm mt-1">Column A should contain "synopsis" header, data from A2 (max 100 rows)</p>
                                         </div>
                                     </div>
                                 </div>
@@ -473,8 +473,8 @@
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                     // Validate format
-                    if (jsonData.length < 2 || !jsonData[0] || jsonData[0][0]?.toLowerCase() !== 'sinopsis') {
-                        showToast('Error', 'Excel format invalid. Column A1 must contain "sinopsis"', 'destructive');
+                    if (jsonData.length < 2 || !jsonData[0] || jsonData[0][0]?.toLowerCase() !== 'synopsis') {
+                        showToast('Error', 'Excel format invalid. Column A1 must contain "synopsis"', 'destructive');
                         return;
                     }
 
@@ -1052,3 +1052,4 @@
     </script>
 </body>
 </html>
+
