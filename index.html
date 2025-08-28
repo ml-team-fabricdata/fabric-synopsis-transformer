@@ -1,148 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Synopsis Transformer + Catalog Assistant (ES/EN) — Fabric AI Services</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synopsis Transformer - Fabric AI Services</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Added SheetJS library for Excel processing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:.5;} }
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
-        .gradient-text { background: linear-gradient(to right, #22d3ee, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .gradient-bg { background: linear-gradient(to right, #0891b2, #7c3aed); }
-        .gradient-bg:hover { background: linear-gradient(to right, #0e7490, #6d28d9); }
-        .grid-pattern { background-image: linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; }
-        .floating-element { animation: float 6s ease-in-out infinite; }
-        @keyframes float { 0%,100% { transform: translateY(0px);} 50% { transform: translateY(-10px);} }
-        .toast { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.9); color: white; padding: 12px 20px; border-radius: 8px; border: 1px solid #374151; z-index: 1000; transform: translateX(100%); transition: transform .3s ease; }
-        .toast.show { transform: translateX(0); }
-        .file-drop-zone { border: 2px dashed #374151; transition: all .3s ease; }
-        .file-drop-zone.dragover { border-color: #22d3ee; background-color: rgba(34,211,238,.05);}        
-        .progress-bar { background: linear-gradient(90deg, #22d3ee 0%, #a855f7 50%, #ec4899 100%); height: 4px; border-radius: 2px; transition: width .3s ease; }
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .gradient-text {
+            background: linear-gradient(to right, #22d3ee, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(to right, #0891b2, #7c3aed);
+        }
+        
+        .gradient-bg:hover {
+            background: linear-gradient(to right, #0e7490, #6d28d9);
+        }
+        
+        .backdrop-blur {
+            backdrop-filter: blur(8px);
+        }
+        
+        .grid-pattern {
+            background-image: 
+                linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .debug-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            color: #10b981;
+            padding: 16px;
+            border-top: 1px solid #374151;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        /* Added styles for Excel processing UI */
+        .file-drop-zone {
+            border: 2px dashed #374151;
+            transition: all 0.3s ease;
+        }
+        
+        .file-drop-zone.dragover {
+            border-color: #22d3ee;
+            background-color: rgba(34, 211, 238, 0.05);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #22d3ee 0%, #a855f7 50%, #ec4899 100%);
+            height: 4px;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-black relative overflow-x-hidden">
+    <!-- Animated Background Grid -->
     <div class="absolute inset-0 grid-pattern animate-pulse"></div>
 
-    <!-- Floating elements -->
+    <!-- Floating Futuristic Elements -->
     <div class="fixed inset-0 pointer-events-none overflow-hidden">
-        <div class="absolute top-20 right-20 opacity-20 floating-element"><div class="w-32 h-24 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-lg border border-cyan-500/30 flex items-center justify-center backdrop-blur"><i data-lucide="brain" class="w-16 h-16 text-cyan-400"></i></div></div>
-        <div class="absolute top-1/3 left-10 opacity-20 floating-element" style="animation-delay:-2s;"><div class="w-28 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30 flex items-center justify-center backdrop-blur"><i data-lucide="cpu" class="w-12 h-12 text-purple-400"></i></div></div>
-        <div class="absolute bottom-32 right-1/4 opacity-20 floating-element" style="animation-delay:-4s;"><div class="w-24 h-24 bg-gradient-to-br from-green-500/20 to-cyan-500/20 rounded-lg border border-green-500/30 flex items-center justify-center backdrop-blur"><i data-lucide="network" class="w-10 h-10 text-green-400"></i></div></div>
-        <div class="absolute top-1/2 right-10 opacity-20 floating-element" style="animation-delay:-1s;"><div class="w-20 h-20 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-500/30 flex items-center justify-center backdrop-blur"><i data-lucide="code-2" class="w-8 h-8 text-yellow-400"></i></div></div>
+        <div class="absolute top-20 right-20 opacity-20 floating-element">
+            <div class="w-32 h-24 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-lg border border-cyan-500/30 flex items-center justify-center backdrop-blur">
+                <i data-lucide="brain" class="w-16 h-16 text-cyan-400"></i>
+            </div>
+        </div>
+        <div class="absolute top-1/3 left-10 opacity-20 floating-element" style="animation-delay: -2s;">
+            <div class="w-28 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30 flex items-center justify-center backdrop-blur">
+                <i data-lucide="cpu" class="w-12 h-12 text-purple-400"></i>
+            </div>
+        </div>
+        <div class="absolute bottom-32 right-1/4 opacity-20 floating-element" style="animation-delay: -4s;">
+            <div class="w-24 h-24 bg-gradient-to-br from-green-500/20 to-cyan-500/20 rounded-lg border border-green-500/30 flex items-center justify-center backdrop-blur">
+                <i data-lucide="network" class="w-10 h-10 text-green-400"></i>
+            </div>
+        </div>
+        <div class="absolute top-1/2 right-10 opacity-20 floating-element" style="animation-delay: -1s;">
+            <div class="w-20 h-20 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-500/30 flex items-center justify-center backdrop-blur">
+                <i data-lucide="code-2" class="w-8 h-8 text-yellow-400"></i>
+            </div>
+        </div>
     </div>
 
     <div class="relative max-w-7xl mx-auto px-6 py-8">
-        <!-- Header -->
+        <!-- Header with Fabric AI Services Branding -->
         <div class="text-center space-y-4 mb-8">
             <div class="flex items-center justify-center gap-4 mb-4">
-                <img src="https://framerusercontent.com/assets/YhHtO4AfpyCgmWFZ6i3dcmRLcAI.png" alt="Fabric AI Services" class="h-10 w-auto" />
+                <img
+                    src="https://framerusercontent.com/assets/YhHtO4AfpyCgmWFZ6i3dcmRLcAI.png"
+                    alt="Fabric AI Services"
+                    class="h-10 w-auto"
+                />
                 <div class="h-6 w-px bg-gradient-to-b from-cyan-500 to-purple-500"></div>
                 <span class="text-cyan-400 font-semibold text-base tracking-wide">FABRIC AI SERVICES</span>
             </div>
-            <h1 class="text-4xl font-bold gradient-text">Fabric Tools</h1>
-            <p class="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">Two utilities on one page: the original <span class="text-cyan-400">Synopsis Transformer</span> and a new <span class="text-purple-400">Catalog Assistant tester</span> for the SQL-first /query endpoint (ES/EN).</p>
-        </div>
 
-        <!-- New: Catalog Assistant Tester (ES/EN) -->
-        <div class="mb-8 border border-gray-800 bg-gray-900/50 backdrop-blur rounded-lg shadow-2xl shadow-purple-500/10">
-            <div class="border-b border-gray-800 p-4 flex flex-wrap items-center gap-3">
-                <h2 class="text-xl font-bold text-white flex items-center gap-3"><div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div> Catalog Assistant Tester</h2>
-                <span class="text-xs text-gray-400">Tools-first • FastAPI • Aurora PostgreSQL</span>
-            </div>
-            <div class="p-4 space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <label class="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="network" class="w-4 h-4"></i> Assistant Endpoint</label>
-                        <input id="as_endpoint" type="text" value="/query" class="w-full font-mono text-sm bg-black/50 border border-gray-700 text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 rounded-md px-3 py-2 outline-none" />
-                    </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="space-y-2 col-span-2">
-                            <label class="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4"></i> Language</label>
-                            <div class="flex items-center gap-2">
-                                <button id="as_lang_es" class="px-3 py-1.5 text-sm font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded hover:bg-purple-500/30">ES</button>
-                                <button id="as_lang_en" class="px-3 py-1.5 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded hover:bg-gray-700">EN</button>
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4"></i> Session</label>
-                            <div class="flex items-center gap-2">
-                                <code id="as_sid" class="text-xs bg-black/50 border border-gray-700 text-gray-300 rounded px-2 py-1 truncate w-full">(none)</code>
-                                <button id="as_reset" class="px-2.5 py-1.5 text-xs border border-gray-700 text-gray-300 hover:border-red-500 hover:text-red-400 rounded">Reset</button>
-                            </div>
-                        </div>
-                    </div>
+            <h1 class="text-4xl font-bold gradient-text">
+                Synopsis Transformer
+            </h1>
+            <p class="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Advanced AI-powered content transformation engine. Intelligently restructures and optimizes synopses with high-precision targeting and real-time analytics.
+            </p>
+
+            <!-- Tech Stats -->
+            <div class="flex items-center justify-center gap-6 pt-2">
+                <div class="flex items-center gap-2 text-cyan-400">
+                    <i data-lucide="zap" class="w-3 h-3"></i>
+                    <span class="text-xs font-mono">NEURAL ENGINE</span>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2 space-y-3">
-                        <label class="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4"></i> Message</label>
-                        <div class="flex items-center gap-2">
-                            <input id="as_msg" type="text" placeholder="Ej.: Conclave 2024 en Argentina / e.g., availability of Loki in Spain" class="flex-1 bg-black/50 border border-gray-700 text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 rounded-md px-3 py-2 outline-none" />
-                            <button id="as_send" class="gradient-bg text-white px-4 py-2 text-sm font-semibold rounded-md flex items-center gap-2"><i data-lucide="send" class="w-4 h-4"></i><span>Send</span></button>
-                        </div>
-                        <div class="text-xs text-gray-400">Tips: “¿de qué trata?” / “what is it about?”, “¿y en Chile?” / “and in Chile?”, “popularidad de Conclave 2024 en 2024 en Argentina”.</div>
-                    </div>
-                    <div class="space-y-3">
-                        <label class="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="help-circle" class="w-4 h-4"></i> Quick</label>
-                        <div class="flex flex-wrap gap-2">
-                            <button data-quick="Conclave 2024" class="px-3 py-1.5 text-xs border border-gray-700 text-gray-300 hover:border-purple-500 hover:text-purple-300 rounded">Conclave 2024</button>
-                            <button data-quick="¿de qué trata?" class="px-3 py-1.5 text-xs border border-gray-700 text-gray-300 hover:border-purple-500 hover:text-purple-300 rounded">¿de qué trata?</button>
-                            <button data-quick="¿y en Chile?" class="px-3 py-1.5 text-xs border border-gray-700 text-gray-300 hover:border-purple-500 hover:text-purple-300 rounded">¿y en Chile?</button>
-                            <button data-quick="Where did you search?" class="px-3 py-1.5 text-xs border border-gray-700 text-gray-300 hover:border-purple-500 hover:text-purple-300 rounded">Where did you search?</button>
-                        </div>
-                    </div>
+                <div class="flex items-center gap-2 text-purple-400">
+                    <i data-lucide="brain" class="w-3 h-3"></i>
+                    <span class="text-xs font-mono">AI POWERED</span>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2 border border-gray-800 bg-black/30 rounded-lg">
-                        <div class="p-3 border-b border-gray-800 flex items-center justify-between">
-                            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="list" class="w-4 h-4"></i> Assistant Output</h3>
-                            <span id="as_status" class="text-xs text-gray-400"></span>
-                        </div>
-                        <div id="as_results" class="p-3 space-y-3 max-h-72 overflow-y-auto">
-                            <p class="text-gray-400 text-sm">Awaiting message…</p>
-                        </div>
-                    </div>
-                    <div class="border border-gray-800 bg-black/30 rounded-lg">
-                        <div class="p-3 border-b border-gray-800 flex items-center justify-between">
-                            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="braces" class="w-4 h-4"></i> JSON</h3>
-                            <button id="as_copy_json" class="text-xs px-2 py-1 border border-gray-700 text-gray-300 rounded hover:border-cyan-500 hover:text-cyan-300"><i data-lucide="copy" class="w-3 h-3"></i> Copy</button>
-                        </div>
-                        <pre id="as_json" class="p-3 text-xs font-mono text-green-400 bg-black/50 max-h-72 overflow-auto whitespace-pre-wrap">{}</pre>
-                    </div>
+                <div class="flex items-center gap-2 text-green-400">
+                    <i data-lucide="network" class="w-3 h-3"></i>
+                    <span class="text-xs font-mono">REAL-TIME</span>
                 </div>
             </div>
         </div>
 
-        <!-- Original: Synopsis Transformer -->
+        <!-- Main Content -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Input Panel -->
             <div class="lg:col-span-2">
                 <div class="border border-gray-800 bg-gray-900/50 backdrop-blur rounded-lg shadow-2xl shadow-cyan-500/10">
-                    <div class="border-b border-gray-800 p-4"><h2 class="text-xl font-bold text-white flex items-center gap-3"><div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div> Transform Engine</h2></div>
+                    <div class="border-b border-gray-800 p-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                            Transform Engine
+                        </h2>
+                    </div>
                     <div class="p-6 space-y-6">
+                        <!-- Made mode switching buttons more prominent and visible -->
                         <div class="space-y-4">
                             <div class="flex items-center gap-4 mb-6">
                                 <span class="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Processing Mode:</span>
-                                <button id="singleModeBtn" class="px-4 py-2 text-sm font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 rounded-lg hover:bg-cyan-500/30 transition-all">Single Synopsis</button>
-                                <button id="batchModeBtn" class="px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all">Batch Excel Processing</button>
+                                <button id="singleModeBtn" class="px-4 py-2 text-sm font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 rounded-lg hover:bg-cyan-500/30 transition-all">
+                                    Single Synopsis
+                                </button>
+                                <button id="batchModeBtn" class="px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all">
+                                    Batch Excel Processing
+                                </button>
                             </div>
                         </div>
+
+                        <!-- Reverted Excel section to original cleaner styling -->
                         <div id="excelSection" class="hidden space-y-6">
                             <div class="space-y-4">
-                                <label class="text-sm font-semibold text-green-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel File Upload</label>
+                                <label class="text-sm font-semibold text-green-400 uppercase tracking-wider flex items-center gap-2">
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                    Excel File Upload
+                                </label>
                                 <div id="fileDropZone" class="file-drop-zone p-6 rounded-lg text-center cursor-pointer">
-                                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden" />
+                                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden">
                                     <div class="space-y-3">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-green-500/20 to-cyan-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/30"><i data-lucide="upload" class="w-6 h-6 text-green-400"></i></div>
+                                        <div class="w-12 h-12 bg-gradient-to-br from-green-500/20 to-cyan-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/30">
+                                            <i data-lucide="upload" class="w-6 h-6 text-green-400"></i>
+                                        </div>
                                         <div>
                                             <p class="text-white font-semibold">Drop Excel file here or click to browse</p>
                                             <p class="text-gray-400 text-sm mt-1">Column A should contain "synopsis" header, data from A2 (max 100 rows)</p>
@@ -150,208 +233,822 @@
                                     </div>
                                 </div>
                                 <div id="fileInfo" class="hidden p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                    <div class="flex items-center gap-3"><i data-lucide="file-check" class="w-5 h-5 text-green-400"></i>
-                                        <div><p id="fileName" class="text-white font-semibold"></p><p id="fileDetails" class="text-green-400 text-sm"></p></div>
+                                    <div class="flex items-center gap-3">
+                                        <i data-lucide="file-check" class="w-5 h-5 text-green-400"></i>
+                                        <div>
+                                            <p id="fileName" class="text-white font-semibold"></p>
+                                            <p id="fileDetails" class="text-green-400 text-sm"></p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Single Synopsis Section -->
                         <div id="singleSection" class="space-y-4">
                             <div class="space-y-4">
-                                <label for="endpoint" class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="network" class="w-4 h-4"></i> API Endpoint</label>
-                                <input id="endpoint" type="text" value="https://REPLACE_WITH_YOUR_ENDPOINT" placeholder="https://your-api-gateway-url" class="w-full font-mono text-sm bg-black/50 border border-gray-700 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-md px-3 py-2 outline-none" />
+                                <label for="endpoint" class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                                    <i data-lucide="network" class="w-4 h-4"></i>
+                                    API Endpoint
+                                </label>
+                                <input
+                                    id="endpoint"
+                                    type="text"
+                                    value="https://REPLACE_WITH_YOUR_ENDPOINT"
+                                    placeholder="https://your-api-gateway-url"
+                                    class="w-full font-mono text-sm bg-black/50 border border-gray-700 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-md px-3 py-2 outline-none"
+                                />
                             </div>
+
                             <div class="space-y-4">
-                                <label for="synopsis" class="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><i data-lucide="code-2" class="w-4 h-4"></i> Synopsis Content</label>
-                                <textarea id="synopsis" rows="6" class="w-full resize-none leading-relaxed bg-black/50 border border-gray-700 text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 rounded-md px-3 py-2 outline-none" placeholder="Enter the synopsis to transform...">Forced to balance their roles as heroes with the strength of their family bond, the Fantastic Four must defend Earth from a ravenous space god called Galactus and his enigmatic Herald, Silver Surfer.</textarea>
+                                <label for="synopsis" class="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+                                    <i data-lucide="code-2" class="w-4 h-4"></i>
+                                    Synopsis Content
+                                </label>
+                                <textarea
+                                    id="synopsis"
+                                    rows="6"
+                                    class="w-full resize-none leading-relaxed bg-black/50 border border-gray-700 text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 rounded-md px-3 py-2 outline-none"
+                                    placeholder="Enter the synopsis to transform..."
+                                >Forced to balance their roles as heroes with the strength of their family bond, the Fantastic Four must defend Earth from a ravenous space god called Galactus and his enigmatic Herald, Silver Surfer.</textarea>
                             </div>
                         </div>
+
+                        <!-- Added batch processing progress section -->
                         <div id="batchProgress" class="hidden space-y-4 p-4 bg-gradient-to-r from-gray-900/80 to-gray-800/80 rounded-lg border border-gray-700">
-                            <div class="flex items-center justify-between"><span class="text-sm font-semibold text-yellow-400 uppercase tracking-wider">Batch Processing</span><span id="progressText" class="text-sm font-mono text-white">0/0</span></div>
-                            <div class="w-full bg-gray-700 rounded-full h-2"><div id="progressBar" class="progress-bar w-0 h-2 rounded-full"></div></div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-semibold text-yellow-400 uppercase tracking-wider">Batch Processing</span>
+                                <span id="progressText" class="text-sm font-mono text-white">0/0</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div id="progressBar" class="progress-bar w-0 h-2 rounded-full"></div>
+                            </div>
                             <div id="currentProcessing" class="text-xs text-gray-400 font-mono"></div>
                         </div>
+
                         <div class="flex items-center gap-4 flex-wrap pt-4">
-                            <button id="transformBtn" class="gradient-bg text-white px-6 py-2.5 text-sm font-semibold shadow-lg shadow-cyan-500/25 transition-all duration-300 rounded-md flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 mr-2"></i><span id="transformBtnText">Transform Content</span></button>
-                            <button id="downloadBtn" class="hidden bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 text-sm font-semibold transition-all duration-300 rounded-md flex items-center gap-2"><i data-lucide="download" class="w-4 h-4 mr-2"></i>Download Results</button>
-                            <div id="timerBadge" class="hidden items-center gap-2 px-3 py-1.5 border border-cyan-500/50 text-cyan-400 bg-cyan-500/10 rounded-full text-sm font-mono"><i data-lucide="clock" class="w-3 h-3"></i><span id="timerText">00:00.0</span></div>
+                            <button
+                                id="transformBtn"
+                                class="gradient-bg text-white px-6 py-2.5 text-sm font-semibold shadow-lg shadow-cyan-500/25 transition-all duration-300 rounded-md flex items-center gap-2"
+                            >
+                                <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                                <span id="transformBtnText">Transform Content</span>
+                            </button>
+
+                            <!-- Added download Excel button for batch results -->
+                            <button
+                                id="downloadBtn"
+                                class="hidden bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 text-sm font-semibold transition-all duration-300 rounded-md flex items-center gap-2"
+                            >
+                                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                Download Results
+                            </button>
+
+                            <div id="timerBadge" class="hidden items-center gap-2 px-3 py-1.5 border border-cyan-500/50 text-cyan-400 bg-cyan-500/10 rounded-full text-sm font-mono">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                <span id="timerText">00:00.0</span>
+                            </div>
+
                             <span id="statusText" class="text-sm text-gray-400 font-mono"></span>
                         </div>
-                        <div id="diagnostics" class="hidden grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-gray-900/80 to-gray-800/80 rounded-lg border border-gray-700 backdrop-blur"></div>
+
+                        <div id="diagnostics" class="hidden grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-gray-900/80 to-gray-800/80 rounded-lg border border-gray-700 backdrop-blur">
+                            <div class="space-y-3">
+                                <p class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                                    <i data-lucide="brain" class="w-4 h-4"></i>
+                                    Target Lengths
+                                </p>
+                                <p id="targetLengths" class="text-lg font-mono text-white">—</p>
+                            </div>
+                            <div class="space-y-3">
+                                <p class="text-sm font-semibold text-green-400 uppercase tracking-wider flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-4 h-4"></i>
+                                    Success Rate
+                                </p>
+                                <p id="successRate" class="text-lg font-mono text-white">0/0</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
             <!-- Results Panel -->
             <div class="lg:col-span-1">
                 <div class="border border-gray-800 bg-gray-900/50 backdrop-blur rounded-lg shadow-2xl shadow-purple-500/10 h-fit max-h-[600px] flex flex-col">
-                    <div class="border-b border-gray-800 p-4 flex-shrink-0"><h2 class="text-xl font-bold text-white flex items-center gap-3"><div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div> Neural Output</h2></div>
-                    <div class="flex-1 overflow-y-auto"><div id="resultsContainer" class="p-4 space-y-4"><div class="text-center py-8"><div class="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 border border-gray-600"><i data-lucide="brain" class="w-6 h-6 text-gray-400"></i></div><p class="text-gray-400 font-mono text-xs">Awaiting neural processing...</p></div></div></div>
+                    <div class="border-b border-gray-800 p-4 flex-shrink-0">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                            <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                            Neural Output
+                        </h2>
+                    </div>
+                    <!-- Added scrollable container for large outputs -->
+                    <div class="flex-1 overflow-y-auto">
+                        <div id="resultsContainer" class="p-4 space-y-4">
+                            <div class="text-center py-8">
+                                <div class="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 border border-gray-600">
+                                    <i data-lucide="brain" class="w-6 h-6 text-gray-400"></i>
+                                </div>
+                                <p class="text-gray-400 font-mono text-xs">Awaiting neural processing...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- JSON Response (Transformer) -->
-        <div class="mt-6"><div class="border border-gray-800 bg-gray-900/50 backdrop-blur rounded-lg shadow-2xl shadow-green-500/10"><details class="group"><summary class="p-4 cursor-pointer border-b border-gray-800 hover:bg-gray-800/50 transition-colors"><div class="flex items-center gap-3"><div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div><span class="text-lg font-bold text-white">JSON Response</span><span class="text-sm text-gray-400 font-mono">(for debugging)</span><i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 ml-auto group-open:rotate-180 transition-transform"></i></div></summary><div class="p-4"><pre id="jsonResponse" class="text-xs font-mono text-green-400 bg-black/50 p-4 rounded border border-gray-700 overflow-auto max-h-80 whitespace-pre-wrap">No response data yet...</pre></div></details></div></div>
+        <!-- Added JSON Response Examination Section -->
+        <div class="mt-6">
+            <div class="border border-gray-800 bg-gray-900/50 backdrop-blur rounded-lg shadow-2xl shadow-green-500/10">
+                <details class="group">
+                    <summary class="p-4 cursor-pointer border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <span class="text-lg font-bold text-white">JSON Response</span>
+                            <span class="text-sm text-gray-400 font-mono">(for debugging)</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 ml-auto group-open:rotate-180 transition-transform"></i>
+                        </div>
+                    </summary>
+                    <div class="p-4">
+                        <pre id="jsonResponse" class="text-xs font-mono text-green-400 bg-black/50 p-4 rounded border border-gray-700 overflow-auto max-h-80 whitespace-pre-wrap">No response data yet...</pre>
+                    </div>
+                </details>
+            </div>
+        </div>
     </div>
 
+    <!-- Debug Panel -->
+    <div id="debugPanel" class="debug-panel"></div>
+
+    <!-- Toast Container -->
     <div id="toastContainer"></div>
 
     <script>
-    // ---- Common helpers ----
-    function showToast(title, description, variant = 'default') {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `<div class="font-semibold">${title}</div><div class="text-sm text-gray-300">${description}</div>`;
-        if (variant === 'destructive') { toast.style.borderColor = '#ef4444'; toast.style.backgroundColor = 'rgba(239,68,68,.1)'; }
-        document.body.appendChild(toast); setTimeout(()=>toast.classList.add('show'),100);
-        setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>document.body.removeChild(toast),300); },3000);
-    }
-    async function copyToClipboard(text){ try{ await navigator.clipboard.writeText(text); showToast('Copied','Text copied'); }catch{ showToast('Error','Clipboard failed','destructive'); } }
-
-    // ========================= CATALOG ASSISTANT TESTER =========================
-    let AS_LANG = 'es';
-    let AS_SID = localStorage.getItem('oi_sid') || null;
-
-    const asEndpoint = document.getElementById('as_endpoint');
-    const asSidEl = document.getElementById('as_sid');
-    const asResetBtn = document.getElementById('as_reset');
-    const asLangEs = document.getElementById('as_lang_es');
-    const asLangEn = document.getElementById('as_lang_en');
-    const asMsg = document.getElementById('as_msg');
-    const asSend = document.getElementById('as_send');
-    const asResults = document.getElementById('as_results');
-    const asJSON = document.getElementById('as_json');
-    const asCopyJSON = document.getElementById('as_copy_json');
-    const asStatus = document.getElementById('as_status');
-
-    function refreshSessionBadge(){ asSidEl.textContent = AS_SID || '(none)'; }
-    refreshSessionBadge();
-
-    function setLang(lang){ AS_LANG = lang; if(lang==='es'){ asLangEs.className='px-3 py-1.5 text-sm font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded'; asLangEn.className='px-3 py-1.5 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded'; } else { asLangEn.className='px-3 py-1.5 text-sm font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded'; asLangEs.className='px-3 py-1.5 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded'; } }
-    setLang(AS_LANG);
-
-    asLangEs.addEventListener('click', ()=>setLang('es'));
-    asLangEn.addEventListener('click', ()=>setLang('en'));
-
-    asResetBtn.addEventListener('click', ()=>{ AS_SID=null; localStorage.removeItem('oi_sid'); refreshSessionBadge(); showToast('Session','session_id cleared'); });
-
-    document.querySelectorAll('[data-quick]').forEach(btn=>btn.addEventListener('click',()=>{ asMsg.value = btn.getAttribute('data-quick'); asMsg.focus(); }));
-
-    asCopyJSON.addEventListener('click', ()=> copyToClipboard(asJSON.textContent));
-
-    async function postQuery(body){
-        const url = (asEndpoint.value || '/query').trim();
-        const headers = { 'Content-Type': 'application/json' };
-        asStatus.textContent = 'Sending…';
-        const res = await fetch(url, { method:'POST', headers, body: JSON.stringify(body) });
-        const text = await res.text();
-        try { asJSON.textContent = JSON.stringify(JSON.parse(text), null, 2); } catch { asJSON.textContent = text; }
-        asStatus.textContent = `HTTP ${res.status}`;
-        if(!res.ok){ showToast('HTTP Error', `Status ${res.status}`, 'destructive'); return null; }
-        const data = JSON.parse(text);
-        if(data.session_id && data.session_id !== AS_SID){ AS_SID = data.session_id; localStorage.setItem('oi_sid', AS_SID); refreshSessionBadge(); }
-        return data;
-    }
-
-    function renderAssistant(data){
-        if(!data){ return; }
-        const step = data.step || 'answer';
-        const text = data.text || '';
-        const cands = Array.isArray(data.candidates) ? data.candidates : [];
-        const blocks = [];
-        blocks.push(`<div class='text-sm text-gray-200 leading-relaxed whitespace-pre-wrap'>${text.replace(/</g,'&lt;')}</div>`);
-        if(step === 'disambiguation' && cands.length){
-            blocks.push(`<div class='mt-3'><div class='text-xs text-gray-400 mb-1'>Select a candidate:</div><div class='space-y-1'>`);
-            cands.slice(0,10).forEach((c,i)=>{
-                const imdb = c.imdb_id ? ` — IMDb ${c.imdb_id}` : '';
-                blocks.push(`<div class='flex items-center justify-between gap-2 border border-gray-800 bg-black/30 rounded px-2 py-1'><div class='text-xs text-gray-300'>${i+1}. <b>${(c.title||'')}</b> (${c.year||''})${imdb}</div><div class='flex gap-2'><button class='px-2 py-0.5 text-xs border border-gray-700 text-gray-300 rounded hover:border-cyan-500 hover:text-cyan-300' data-pick-uid='${c.uid||''}'>${AS_LANG==='es'?'Elegir':'Select'}</button></div></div>`);
-            });
-            blocks.push(`</div></div>`);
-        }
-        asResults.innerHTML = blocks.join('');
-        asResults.querySelectorAll('[data-pick-uid]').forEach(btn=>btn.addEventListener('click', async ()=>{
-            const uid = btn.getAttribute('data-pick-uid');
-            const payload = { session_id: AS_SID, language: AS_LANG, select_uid: uid };
-            const follow = await postQuery(payload);
-            renderAssistant(follow);
-        }));
+        // Initialize Lucide icons
         lucide.createIcons();
-    }
 
-    async function sendAssistant(){
-        const message = (asMsg.value||'').trim();
-        if(!message){ showToast('Info','Enter a message'); return; }
-        const payload = { session_id: AS_SID, language: AS_LANG, user_name: 'Rafael', message };
-        const data = await postQuery(payload);
-        renderAssistant(data);
-    }
+        // State variables
+        let isLoading = false;
+        let results = [];
+        let startTime = 0;
+        let timerInterval = null; // Added timer interval for real-time updates
 
-    asSend.addEventListener('click', sendAssistant);
-    asMsg.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendAssistant(); }});
+        // Batch processing variables
+        let isBatchMode = false;
+        let excelData = [];
+        let batchResults = [];
+        let currentBatchIndex = 0;
 
-    // ========================= SYNOPSIS TRANSFORMER (original) =========================
-    let isLoading=false, results=[], startTime=0, timerInterval=null;
-    let isBatchMode=false, excelData=[], batchResults=[], currentBatchIndex=0;
+        // DOM elements
+        const endpointInput = document.getElementById('endpoint');
+        const synopsisTextarea = document.getElementById('synopsis');
+        const transformBtn = document.getElementById('transformBtn');
+        const timerBadge = document.getElementById('timerBadge'); // Updated to use timerBadge
+        const timerText = document.getElementById('timerText'); // Updated to use timerText
+        const statusText = document.getElementById('statusText');
+        const diagnostics = document.getElementById('diagnostics');
+        const targetLengths = document.getElementById('targetLengths');
+        const successRate = document.getElementById('successRate');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const jsonResponse = document.getElementById('jsonResponse'); // Added JSON response element
+        const singleModeBtn = document.getElementById('singleModeBtn');
+        const batchModeBtn = document.getElementById('batchModeBtn');
+        const excelSection = document.getElementById('excelSection');
+        const singleSection = document.getElementById('singleSection');
+        const fileDropZone = document.getElementById('fileDropZone');
+        const excelFileInput = document.getElementById('excelFileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileDetails = document.getElementById('fileDetails');
+        const batchProgress = document.getElementById('batchProgress');
+        const progressText = document.getElementById('progressText');
+        const progressBar = document.getElementById('progressBar');
+        const currentProcessing = document.getElementById('currentProcessing');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const transformBtnText = document.getElementById('transformBtnText');
 
-    const endpointInput=document.getElementById('endpoint');
-    const synopsisTextarea=document.getElementById('synopsis');
-    const transformBtn=document.getElementById('transformBtn');
-    const timerBadge=document.getElementById('timerBadge');
-    const timerText=document.getElementById('timerText');
-    const statusText=document.getElementById('statusText');
-    const diagnostics=document.getElementById('diagnostics');
-    const resultsContainer=document.getElementById('resultsContainer');
-    const jsonResponse=document.getElementById('jsonResponse');
-    const singleModeBtn=document.getElementById('singleModeBtn');
-    const batchModeBtn=document.getElementById('batchModeBtn');
-    const excelSection=document.getElementById('excelSection');
-    const singleSection=document.getElementById('singleSection');
-    const fileDropZone=document.getElementById('fileDropZone');
-    const excelFileInput=document.getElementById('excelFileInput');
-    const fileInfo=document.getElementById('fileInfo');
-    const fileName=document.getElementById('fileName');
-    const fileDetails=document.getElementById('fileDetails');
-    const batchProgress=document.getElementById('batchProgress');
-    const progressText=document.getElementById('progressText');
-    const progressBar=document.getElementById('progressBar');
-    const currentProcessing=document.getElementById('currentProcessing');
-    const downloadBtn=document.getElementById('downloadBtn');
-    const transformBtnText=document.getElementById('transformBtnText');
+        function switchToSingleMode() {
+            isBatchMode = false;
+            singleModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 rounded-lg hover:bg-cyan-500/30 transition-all';
+            batchModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all';
+            excelSection.classList.add('hidden');
+            singleSection.classList.remove('hidden');
+            batchProgress.classList.add('hidden');
+            downloadBtn.classList.add('hidden');
+            transformBtnText.textContent = 'Transform Content';
+            
+            // Reset results display
+            results = [];
+            renderResults();
+            diagnostics.classList.add('hidden');
+            jsonResponse.textContent = 'No response data yet...';
+        }
 
-    function switchToSingleMode(){ isBatchMode=false; singleModeBtn.className='px-4 py-2 text-sm font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 rounded-lg hover:bg-cyan-500/30 transition-all'; batchModeBtn.className='px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all'; excelSection.classList.add('hidden'); singleSection.classList.remove('hidden'); batchProgress.classList.add('hidden'); downloadBtn.classList.add('hidden'); transformBtnText.textContent='Transform Content'; results=[]; renderResults(); diagnostics.classList.add('hidden'); jsonResponse.textContent='No response data yet...'; }
-    function switchToBatchMode(){ isBatchMode=true; batchModeBtn.className='px-4 py-2 text-sm font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-500/30 transition-all'; singleModeBtn.className='px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all'; singleSection.classList.add('hidden'); excelSection.classList.remove('hidden'); transformBtnText.textContent='Process Excel File'; batchResults=[]; currentBatchIndex=0; downloadBtn.classList.add('hidden'); }
+        function switchToBatchMode() {
+            isBatchMode = true;
+            batchModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-500/30 transition-all';
+            singleModeBtn.className = 'px-4 py-2 text-sm font-semibold bg-gray-800 text-gray-400 border border-gray-700 rounded-lg hover:bg-gray-700 transition-all';
+            singleSection.classList.add('hidden');
+            excelSection.classList.remove('hidden');
+            transformBtnText.textContent = 'Process Excel File';
+            
+            // Reset batch results
+            batchResults = [];
+            currentBatchIndex = 0;
+            downloadBtn.classList.add('hidden');
+        }
 
-    function startTimer(){ timerBadge.classList.remove('hidden'); timerBadge.classList.add('flex'); timerText.textContent='00:00.0'; startTime=performance.now(); stopTimer(); timerInterval=setInterval(()=>{ const elapsed=performance.now()-startTime; timerText.textContent=formatDuration(elapsed); },100); }
-    function stopTimer(finalMs=null){ if(timerInterval){ clearInterval(timerInterval); timerInterval=null; } if(finalMs!==null){ timerText.textContent=formatDuration(finalMs); } }
-    function formatDuration(ms){ const seconds=ms/1000; const minutes=Math.floor(seconds/60); const remainingSeconds=seconds-minutes*60; return `${String(minutes).padStart(2,'0')}:${remainingSeconds.toFixed(1).padStart(4,'0')}`; }
-    function isWithinTarget(actual,target){ return actual<=target && actual>=Math.floor(target*0.85); }
-    function getPercentage(actual,target){ if(!target) return '—'; const percentage=(actual*100)/target; return `${percentage.toFixed(1)}%`; }
+        function handleFileSelect(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showToast('Error', 'Please select an Excel file (.xlsx or .xls)', 'destructive');
+                return;
+            }
 
-    function renderResults(){ if(results.length===0){ resultsContainer.innerHTML=`<div class='text-center py-8'><div class='w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 border border-gray-600'><i data-lucide='brain' class='w-6 h-6 text-gray-400'></i></div><p class='text-gray-400 font-mono text-xs'>Awaiting neural processing...</p></div>`; } else { resultsContainer.innerHTML = results.map(result => { const withinTarget=isWithinTarget(result.actualLength,result.target); const badgeClass=withinTarget?'bg-green-500/20 text-green-400 border-green-500/50':'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'; const spanishSection=result.textEs?`<div class='mt-4 pt-4 border-t border-gray-700'><div class='flex items-center gap-2 mb-2'><span class='text-xs font-semibold text-orange-400 uppercase tracking-wider'>Spanish Output</span><span class='px-2 py-1 rounded-full text-xs font-semibold border bg-orange-500/20 text-orange-400 border-orange-500/50'>${result.actualLengthEs} chars · ${getPercentage(result.actualLengthEs,result.target)}</span></div><p class='text-xs leading-relaxed mb-2 text-gray-300'>${result.textEs}</p><button onclick="copyToClipboard('${result.textEs.replace(/'/g, "\\'")}')" class='h-7 px-2 border border-gray-600 text-gray-400 hover:border-orange-500 hover:text-orange-400 hover:bg-orange-500/10 rounded text-xs flex items-center gap-1'><i data-lucide='copy' class='w-3 h-3'></i>Copy ES</button></div>`:''; return `<div class='border border-gray-700 bg-black/30 backdrop-blur rounded-lg'><div class='p-3 border-b border-gray-700'><div class='flex items-center justify-between'><h3 class='text-sm font-bold text-white'>Length ${result.target}</h3><span class='px-2 py-1 rounded-full text-xs font-semibold border ${badgeClass}'>${result.actualLength} chars · ${getPercentage(result.actualLength,result.target)}</span></div></div><div class='p-3'><div class='mb-2'><span class='text-xs font-semibold text-cyan-400 uppercase tracking-wider'>English Output</span></div><p class='text-xs leading-relaxed mb-4 text-gray-300'>${result.text}</p><div class='flex items-center justify-between'><div class='flex gap-1'><span class='px-2 py-1 text-xs font-mono border border-gray-600 text-gray-400 rounded'>Target: ${result.target}</span></div><button onclick="copyToClipboard('${result.text.replace(/'/g, "\\'")}')" class='h-7 px-2 border border-gray-600 text-gray-400 hover:border-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded text-xs flex items-center gap-1'><i data-lucide='copy' class='w-3 h-3'></i>Copy EN</button></div>${spanishSection}</div></div>`; }).join(''); } lucide.createIcons(); }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-    async function handleTransform(){ if(isBatchMode){ await processBatch(); } else { const endpoint=endpointInput.value.trim(); const synopsis=synopsisTextarea.value.trim(); if(!endpoint){ statusText.textContent='Please define the endpoint.'; return;} if(!synopsis){ statusText.textContent='Please enter a synopsis.'; return;} isLoading=true; statusText.innerHTML='Sending request... <div class="inline-block w-3 h-3 animate-spin ml-1"><i data-lucide="loader-2" class="w-3 h-3"></i></div>'; results=[]; renderResults(); diagnostics.innerHTML=''; diagnostics.classList.add('hidden'); jsonResponse.textContent='Processing...'; transformBtn.innerHTML=`<div class='w-4 h-4 animate-spin mr-2'><i data-lucide='loader-2' class='w-4 h-4'></i></div>Processing...`; transformBtn.disabled=true; startTimer(); let response, endTime; try{ response=await fetch(endpoint,{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ synopsis })}); endTime=performance.now(); stopTimer(endTime-startTime);} catch(e){ stopTimer(); statusText.textContent=`Network error: ${e.message}`; jsonResponse.textContent=`Network error: ${e.message}`; transformBtn.innerHTML=`<i data-lucide='zap' class='w-4 h-4 mr-2'></i>Transform Content`; transformBtn.disabled=false; return;} const apigReqId = response.headers.get('Apigw-Requestid') || response.headers.get('apigw-requestid') || '—'; const responseText = await response.text(); jsonResponse.textContent = `HTTP ${response.status}\nApigw-RequestId: ${apigReqId}\n\n${responseText}`; if(!response.ok){ statusText.textContent=`HTTP ${response.status} — check CORS/endpoint.`; transformBtn.innerHTML=`<i data-lucide='zap' class='w-4 h-4 mr-2'></i>Transform Content`; transformBtn.disabled=false; return;} let data; try{ data = JSON.parse(responseText);} catch{ statusText.textContent='Could not parse JSON response.'; transformBtn.innerHTML=`<i data-lucide='zap' class='w-4 h-4 mr-2'></i>Transform Content`; transformBtn.disabled=false; return;} const outputs=data.outputs||{}; const actualLengths=data.lengths_actual||{}; const requestedLengths=data.lengths_requested||[]; const outputsEs=data.outputs_es||{}; const actualLengthsEs=data.lengths_actual_es||{}; results = Object.keys(outputs).map(key=>{ const target=Number(key.replace('len_','')); return { k:key, target, text: outputs[key], actualLength: actualLengths[key] ?? outputs[key].trim().length, textEs: outputsEs[key] || null, actualLengthEs: actualLengthsEs[key] ?? (outputsEs[key] ? outputsEs[key].trim().length : 0) }; }).sort((a,b)=>a.target-b.target); renderResults(); const passCount = results.filter(r=>isWithinTarget(r.actualLength,r.target)).length; const durationMs = endTime - startTime; const tokenInfo = document.createElement('div'); tokenInfo.className='grid grid-cols-1 md:grid-cols-2 gap-4'; tokenInfo.innerHTML = `<div class='space-y-3'><p class='text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2'><i data-lucide='brain' class='w-4 h-4'></i>Target Lengths</p><p id='targetLengths' class='text-lg font-mono text-white'>${requestedLengths.join(', ')||'—'}</p></div><div class='space-y-3'><p class='text-sm font-semibold text-green-400 uppercase tracking-wider flex items-center gap-2'><i data-lucide='zap' class='w-4 h-4'></i>Success Rate</p><p id='successRate' class='text-lg font-mono text-white'>${passCount}/${results.length}</p></div>`; diagnostics.innerHTML=''; diagnostics.appendChild(tokenInfo); diagnostics.classList.remove('hidden'); diagnostics.classList.add('grid'); statusText.textContent = `Completed in ${durationMs.toFixed(0)} ms · RequestId ${apigReqId}`; transformBtn.innerHTML=`<i data-lucide='zap' class='w-4 h-4 mr-2'></i>Transform Content`; transformBtn.disabled=false; lucide.createIcons(); } }
+                    // Validate format
+                    if (jsonData.length < 2 || !jsonData[0] || jsonData[0][0]?.toLowerCase() !== 'synopsis') {
+                        showToast('Error', 'Excel format invalid. Column A1 must contain "synopsis"', 'destructive');
+                        return;
+                    }
 
-    async function processBatch(){ if(excelData.length===0){ showToast('Error','Please upload an Excel file first','destructive'); return;} const endpoint=endpointInput.value.trim(); if(!endpoint){ showToast('Error','Please define the API endpoint','destructive'); return;} batchResults=[]; currentBatchIndex=0; batchProgress.classList.remove('hidden'); transformBtn.disabled=true; transformBtn.innerHTML=`<div class='w-4 h-4 animate-spin mr-2'><i data-lucide='loader-2' class='w-4 h-4'></i></div>Processing Batch...`; startTimer(); for(let i=0;i<excelData.length;i++){ currentBatchIndex=i; const item=excelData[i]; const progress=((i+1)/excelData.length)*100; progressBar.style.width=`${progress}%`; progressText.textContent=`${i+1}/${excelData.length}`; currentProcessing.textContent=`Processing row ${item.row}: ${item.synopsis.substring(0,50)}...`; try{ const response=await fetch(endpoint,{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ synopsis: item.synopsis })}); if(response.ok){ const data=await response.json(); batchResults.push({ row:item.row, originalSynopsis:item.synopsis, outputs:data.outputs||{}, outputs_es:data.outputs_es||{}, lengths_actual:data.lengths_actual||{}, lengths_actual_es:data.lengths_actual_es||{}, tokens_en:data.tokens_en||{}, tokens_es:data.tokens_es||{}, token_totals_all:data.token_totals_all||{}, success:true }); } else { batchResults.push({ row:item.row, originalSynopsis:item.synopsis, error:`HTTP ${response.status}`, success:false }); } } catch(error){ batchResults.push({ row:item.row, originalSynopsis:item.synopsis, error:error.message, success:false }); } await new Promise(r=>setTimeout(r,100)); }
-        stopTimer(); transformBtn.disabled=false; transformBtn.innerHTML=`<i data-lucide='zap' class='w-4 h-4 mr-2'></i>Process Excel File`; currentProcessing.textContent='Batch processing completed!'; downloadBtn.classList.remove('hidden'); const successCount = batchResults.filter(r=>r.success).length; showToast('Batch Complete',`Processed ${batchResults.length} synopses (${successCount} successful)`); lucide.createIcons(); }
+                    // Extract synopses (max 100)
+                    excelData = [];
+                    for (let i = 1; i < Math.min(jsonData.length, 101); i++) {
+                        if (jsonData[i] && jsonData[i][0] && jsonData[i][0].trim()) {
+                            excelData.push({
+                                row: i + 1,
+                                synopsis: jsonData[i][0].trim()
+                            });
+                        }
+                    }
 
-    function handleFileSelect(file){ if(!file.name.match(/\.(xlsx|xls)$/)){ showToast('Error','Please select an Excel file (.xlsx or .xls)','destructive'); return;} const reader=new FileReader(); reader.onload=function(e){ try{ const data=new Uint8Array(e.target.result); const workbook=XLSX.read(data,{type:'array'}); const sheetName=workbook.SheetNames[0]; const worksheet=workbook.Sheets[sheetName]; const jsonData=XLSX.utils.sheet_to_json(worksheet,{header:1}); if(jsonData.length<2 || !jsonData[0] || jsonData[0][0]?.toLowerCase()!=='synopsis'){ showToast('Error','Excel format invalid. Column A1 must contain "synopsis"','destructive'); return;} excelData=[]; for(let i=1;i<Math.min(jsonData.length,101);i++){ if(jsonData[i] && jsonData[i][0] && jsonData[i][0].trim()){ excelData.push({ row:i+1, synopsis: jsonData[i][0].trim() }); } } if(excelData.length===0){ showToast('Error','No valid synopses found in the Excel file','destructive'); return;} fileName.textContent=file.name; fileDetails.textContent=`${excelData.length} synopses loaded`; fileInfo.classList.remove('hidden'); showToast('Success',`Loaded ${excelData.length} synopses from Excel file`); } catch(error){ showToast('Error','Could not read Excel file: '+error.message,'destructive'); } }; reader.readAsArrayBuffer(file); }
+                    if (excelData.length === 0) {
+                        showToast('Error', 'No valid synopses found in the Excel file', 'destructive');
+                        return;
+                    }
 
-    function downloadResults(){ if(batchResults.length===0) return; const headers=['Row','Original Synopsis']; const lengthTargets=[82,180,200,239,255]; lengthTargets.forEach(t=>{ headers.push(`English ${t} chars`); headers.push(`English Length ${t}`); }); lengthTargets.forEach(t=>{ headers.push(`Spanish ${t} chars`); headers.push(`Spanish Length ${t}`); }); headers.push('English Input Tokens','English Output Tokens','English Attempts'); headers.push('Spanish Input Tokens','Spanish Output Tokens','Spanish Attempts'); headers.push('Total Input Tokens','Total Output Tokens','Total Attempts'); headers.push('cost_usd_claud_haiku_3.5_1M_tokens_entry','cost_usd_claud_haiku_3.5_1M_tokens_exit','avg_cost_usd_infra_1_synopsis','final_cost_usd'); const rows=[headers]; batchResults.forEach(result=>{ const row=[result.row, result.originalSynopsis]; if(result.outputs && result.outputs_es){ lengthTargets.forEach(t=>{ const key=`len_${t}`; const out=result.outputs[key]||''; const actual=result.lengths_actual? result.lengths_actual[key] : out.length; row.push(out); row.push(actual); }); lengthTargets.forEach(t=>{ const key=`len_${t}`; const out=result.outputs_es[key]||''; const actual=result.lengths_actual_es? result.lengths_actual_es[key] : out.length; row.push(out); row.push(actual); }); const en=result.tokens_en||{}; const es=result.tokens_es||{}; const tot=result.token_totals_all||{}; row.push(en.input_tokens||0, en.output_tokens||0, en.attempts||0); row.push(es.input_tokens||0, es.output_tokens||0, es.attempts||0); row.push(tot.input_tokens||0, tot.output_tokens||0, tot.attempts||0); const inputTokens=tot.input_tokens||0; const outputTokens=tot.output_tokens||0; const costEntry=0.8, costExit=4, avgCostInfra=0.00047; const finalCost=(inputTokens*(costEntry/1_000_000)) + (outputTokens*(costExit/1_000_000)) + avgCostInfra; row.push(costEntry, costExit, avgCostInfra, finalCost); } else { lengthTargets.forEach(()=>{ row.push(result.error||'Error'); row.push(0); }); lengthTargets.forEach(()=>{ row.push(result.error||'Error'); row.push(0); }); for(let i=0;i<9;i++){ row.push(0); } row.push(0.8, 4, 0.00047, 0.00047); } rows.push(row); }); const worksheet=XLSX.utils.aoa_to_sheet(rows); const workbook=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, 'Synopsis Results'); const timestamp=new Date().toISOString().slice(0,19).replace(/:/g,'-'); XLSX.writeFile(workbook, `synopsis-results-${timestamp}.xlsx`); showToast('Success','Results downloaded successfully'); }
+                    // Show file info
+                    fileName.textContent = file.name;
+                    fileDetails.textContent = `${excelData.length} synopses loaded`;
+                    fileInfo.classList.remove('hidden');
+                    
+                    showToast('Success', `Loaded ${excelData.length} synopses from Excel file`);
+                } catch (error) {
+                    showToast('Error', 'Could not read Excel file: ' + error.message, 'destructive');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
-    // Event listeners
-    const fileDropZone=document.getElementById('fileDropZone');
-    fileDropZone.addEventListener('click', ()=>excelFileInput.click());
-    fileDropZone.addEventListener('dragover', e=>{ e.preventDefault(); fileDropZone.classList.add('dragover'); });
-    fileDropZone.addEventListener('dragleave', ()=>fileDropZone.classList.remove('dragover'));
-    fileDropZone.addEventListener('drop', e=>{ e.preventDefault(); fileDropZone.classList.remove('dragover'); const files=e.dataTransfer.files; if(files.length>0){ handleFileSelect(files[0]); } });
-    excelFileInput.addEventListener('change', e=>{ if(e.target.files.length>0){ handleFileSelect(e.target.files[0]); } });
+        async function processBatch() {
+            if (excelData.length === 0) {
+                showToast('Error', 'Please upload an Excel file first', 'destructive');
+                return;
+            }
 
-    document.getElementById('downloadBtn').addEventListener('click', downloadResults);
-    document.getElementById('transformBtn').addEventListener('click', handleTransform);
-    document.getElementById('singleModeBtn').addEventListener('click', switchToSingleMode);
-    document.getElementById('batchModeBtn').addEventListener('click', switchToBatchMode);
+            const endpoint = endpointInput.value.trim();
+            if (!endpoint) {
+                showToast('Error', 'Please define the API endpoint', 'destructive');
+                return;
+            }
 
-    lucide.createIcons();
+            // Reset batch state
+            batchResults = [];
+            currentBatchIndex = 0;
+            
+            // Show progress
+            batchProgress.classList.remove('hidden');
+            transformBtn.disabled = true;
+            transformBtn.innerHTML = `
+                <div class="w-4 h-4 animate-spin mr-2">
+                    <i data-lucide="loader-2" class="w-4 h-4"></i>
+                </div>
+                Processing Batch...
+            `;
+
+            startTimer();
+
+            // Process each synopsis
+            for (let i = 0; i < excelData.length; i++) {
+                currentBatchIndex = i;
+                const item = excelData[i];
+                
+                // Update progress
+                const progress = ((i + 1) / excelData.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${i + 1}/${excelData.length}`;
+                currentProcessing.textContent = `Processing row ${item.row}: ${item.synopsis.substring(0, 50)}...`;
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ synopsis: item.synopsis }),
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        batchResults.push({
+                            row: item.row,
+                            originalSynopsis: item.synopsis,
+                            outputs: data.outputs || {},
+                            outputs_es: data.outputs_es || {},
+                            lengths_actual: data.lengths_actual || {},
+                            lengths_actual_es: data.lengths_actual_es || {},
+                            tokens_en: data.tokens_en || {},
+                            tokens_es: data.tokens_es || {},
+                            token_totals_all: data.token_totals_all || {},
+                            success: true
+                        });
+                    } else {
+                        batchResults.push({
+                            row: item.row,
+                            originalSynopsis: item.synopsis,
+                            error: `HTTP ${response.status}`,
+                            success: false
+                        });
+                    }
+                } catch (error) {
+                    batchResults.push({
+                        row: item.row,
+                        originalSynopsis: item.synopsis,
+                        error: error.message,
+                        success: false
+                    });
+                }
+
+                // Small delay to prevent overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // Complete processing
+            stopTimer();
+            transformBtn.disabled = false;
+            transformBtn.innerHTML = `
+                <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                Process Excel File
+            `;
+            
+            currentProcessing.textContent = 'Batch processing completed!';
+            downloadBtn.classList.remove('hidden');
+            
+            const successCount = batchResults.filter(r => r.success).length;
+            showToast('Batch Complete', `Processed ${batchResults.length} synopses (${successCount} successful)`);
+            
+            lucide.createIcons();
+        }
+
+        function startTimer() {
+            timerBadge.classList.remove('hidden');
+            timerBadge.classList.add('flex');
+            timerText.textContent = '00:00.0';
+            startTime = performance.now();
+            stopTimer();
+            timerInterval = setInterval(() => {
+                const elapsed = performance.now() - startTime;
+                timerText.textContent = formatDuration(elapsed);
+            }, 100);
+        }
+
+        function stopTimer(finalMs = null) {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (finalMs !== null) {
+                timerText.textContent = formatDuration(finalMs);
+            }
+        }
+
+        // Utility functions
+        function formatDuration(ms) {
+            const seconds = ms / 1000;
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds - minutes * 60;
+            return `${String(minutes).padStart(2, '0')}:${remainingSeconds.toFixed(1).padStart(4, '0')}`;
+        }
+
+        function isWithinTarget(actual, target) {
+            return actual <= target && actual >= Math.floor(target * 0.85);
+        }
+
+        function getPercentage(actual, target) {
+            if (!target) return "—";
+            const percentage = (actual * 100) / target;
+            return `${percentage.toFixed(1)}%`;
+        }
+
+        function showToast(title, description, variant = 'default') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <div class="font-semibold">${title}</div>
+                <div class="text-sm text-gray-300">${description}</div>
+            `;
+            
+            if (variant === 'destructive') {
+                toast.style.borderColor = '#ef4444';
+                toast.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            }
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('Copied', 'Text copied to clipboard');
+            } catch (error) {
+                showToast('Error', 'Could not copy text', 'destructive');
+            }
+        }
+
+        function renderResults() {
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 border border-gray-600">
+                            <i data-lucide="brain" class="w-6 h-6 text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-400 font-mono text-xs">Awaiting neural processing...</p>
+                    </div>
+                `;
+            } else {
+                resultsContainer.innerHTML = results.map(result => {
+                    const withinTarget = isWithinTarget(result.actualLength, result.target);
+                    const badgeClass = withinTarget 
+                        ? 'bg-green-500/20 text-green-400 border-green-500/50' 
+                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+                    
+                    const spanishSection = result.textEs ? `
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs font-semibold text-orange-400 uppercase tracking-wider">Spanish Output</span>
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold border bg-orange-500/20 text-orange-400 border-orange-500/50">
+                                    ${result.actualLengthEs} chars · ${getPercentage(result.actualLengthEs, result.target)}
+                                </span>
+                            </div>
+                            <p class="text-xs leading-relaxed mb-2 text-gray-300">${result.textEs}</p>
+                            <button
+                                onclick="copyToClipboard('${result.textEs.replace(/'/g, "\\'")}')"
+                                class="h-7 px-2 border border-gray-600 text-gray-400 hover:border-orange-500 hover:text-orange-400 hover:bg-orange-500/10 rounded text-xs flex items-center gap-1"
+                            >
+                                <i data-lucide="copy" class="w-3 h-3"></i>
+                                Copy ES
+                            </button>
+                        </div>
+                    ` : '';
+                    
+                    return `
+                        <div class="border border-gray-700 bg-black/30 backdrop-blur rounded-lg">
+                            <div class="p-3 border-b border-gray-700">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-sm font-bold text-white">Length ${result.target}</h3>
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold border ${badgeClass}">
+                                        ${result.actualLength} chars · ${getPercentage(result.actualLength, result.target)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <div class="mb-2">
+                                    <span class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">English Output</span>
+                                </div>
+                                <p class="text-xs leading-relaxed mb-4 text-gray-300">${result.text}</p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex gap-1">
+                                        <span class="px-2 py-1 text-xs font-mono border border-gray-600 text-gray-400 rounded">
+                                            Target: ${result.target}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onclick="copyToClipboard('${result.text.replace(/'/g, "\\'")}')"
+                                        class="h-7 px-2 border border-gray-600 text-gray-400 hover:border-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded text-xs flex items-center gap-1"
+                                    >
+                                        <i data-lucide="copy" class="w-3 h-3"></i>
+                                        Copy EN
+                                    </button>
+                                </div>
+                                ${spanishSection}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            lucide.createIcons();
+        }
+
+        // Excel export function
+        function downloadResults() {
+            if (batchResults.length === 0) return;
+
+            const headers = ['Row', 'Original Synopsis'];
+            const lengthTargets = [82, 180, 200, 239, 255]; // Standard targets
+            
+            // Add headers for English outputs
+            lengthTargets.forEach(target => {
+                headers.push(`English ${target} chars`);
+                headers.push(`English Length ${target}`);
+            });
+            
+            // Add headers for Spanish outputs
+            lengthTargets.forEach(target => {
+                headers.push(`Spanish ${target} chars`);
+                headers.push(`Spanish Length ${target}`);
+            });
+            
+            // Add token information headers
+            headers.push('English Input Tokens', 'English Output Tokens', 'English Attempts');
+            headers.push('Spanish Input Tokens', 'Spanish Output Tokens', 'Spanish Attempts');
+            headers.push('Total Input Tokens', 'Total Output Tokens', 'Total Attempts');
+            
+            headers.push('cost_usd_claud_haiku_3.5_1M_tokens_entry', 'cost_usd_claud_haiku_3.5_1M_tokens_exit', 'avg_cost_usd_infra_1_synopsis', 'final_cost_usd');
+
+            const rows = [headers];
+
+            batchResults.forEach(result => {
+                const row = [result.row, result.originalSynopsis];
+                
+                if (result.outputs && result.outputs_es) {
+                    // Add English outputs
+                    lengthTargets.forEach(target => {
+                        const key = `len_${target}`;
+                        const output = result.outputs[key] || '';
+                        const actualLength = result.lengths_actual ? result.lengths_actual[key] : output.length;
+                        row.push(output);
+                        row.push(actualLength);
+                    });
+                    
+                    // Add Spanish outputs
+                    lengthTargets.forEach(target => {
+                        const key = `len_${target}`;
+                        const output = result.outputs_es[key] || '';
+                        const actualLength = result.lengths_actual_es ? result.lengths_actual_es[key] : output.length;
+                        row.push(output);
+                        row.push(actualLength);
+                    });
+                    
+                    // Add token information
+                    const tokensEn = result.tokens_en || {};
+                    const tokensEs = result.tokens_es || {};
+                    const tokenTotals = result.token_totals_all || {};
+                    
+                    row.push(tokensEn.input_tokens || 0);
+                    row.push(tokensEn.output_tokens || 0);
+                    row.push(tokensEn.attempts || 0);
+                    row.push(tokensEs.input_tokens || 0);
+                    row.push(tokensEs.output_tokens || 0);
+                    row.push(tokensEs.attempts || 0);
+                    row.push(tokenTotals.input_tokens || 0);
+                    row.push(tokenTotals.output_tokens || 0);
+                    row.push(tokenTotals.attempts || 0);
+                    
+                    const inputTokens = tokenTotals.input_tokens || 0;
+                    const outputTokens = tokenTotals.output_tokens || 0;
+                    
+                    const costEntry = 0.8;
+                    const costExit = 4;
+                    const avgCostInfra = 0.00047;
+                    
+                    const finalCost = (inputTokens * (costEntry / 1000000)) + (outputTokens * (costExit / 1000000)) + avgCostInfra;
+                    
+                    row.push(costEntry);
+                    row.push(costExit);
+                    row.push(avgCostInfra);
+                    row.push(finalCost);
+                } else {
+                    // Fill with error or empty values for both English and Spanish
+                    lengthTargets.forEach(() => {
+                        row.push(result.error || 'Error');
+                        row.push(0);
+                    });
+                    lengthTargets.forEach(() => {
+                        row.push(result.error || 'Error');
+                        row.push(0);
+                    });
+                    // Fill token information with zeros
+                    for (let i = 0; i < 9; i++) {
+                        row.push(0);
+                    }
+                    row.push(0.8);
+                    row.push(4);
+                    row.push(0.00047);
+                    row.push(0.00047); // Just the infrastructure cost if no tokens
+                }
+                
+                rows.push(row);
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Synopsis Results');
+            
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            XLSX.writeFile(workbook, `synopsis-results-${timestamp}.xlsx`);
+            
+            showToast('Success', 'Results downloaded successfully');
+        }
+
+        async function handleTransform() {
+            if (isBatchMode) {
+                await processBatch();
+            } else {
+                // Original single synopsis logic
+                const endpoint = endpointInput.value.trim();
+                const synopsis = synopsisTextarea.value.trim();
+
+                if (!endpoint) {
+                    statusText.textContent = 'Please define the endpoint.';
+                    return;
+                }
+                if (!synopsis) {
+                    statusText.textContent = 'Please enter a synopsis.';
+                    return;
+                }
+
+                isLoading = true;
+                statusText.innerHTML = 'Sending request... <div class="inline-block w-3 h-3 animate-spin ml-1"><i data-lucide="loader-2" class="w-3 h-3"></i></div>';
+                results = [];
+                renderResults();
+                diagnostics.classList.add('hidden');
+                jsonResponse.textContent = 'Processing...';
+
+                transformBtn.innerHTML = `
+                    <div class="w-4 h-4 animate-spin mr-2">
+                        <i data-lucide="loader-2" class="w-4 h-4"></i>
+                    </div>
+                    Processing...
+                `;
+                transformBtn.disabled = true;
+
+                startTimer();
+
+                let response, endTime;
+                try {
+                    response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ synopsis: synopsis }),
+                    });
+                    endTime = performance.now();
+                    stopTimer(endTime - startTime);
+                } catch (error) {
+                    stopTimer();
+                    statusText.textContent = `Network error: ${error.message}`;
+                    jsonResponse.textContent = `Network error: ${error.message}`;
+                    return;
+                } finally {
+                    isLoading = false;
+                    transformBtn.innerHTML = `
+                        <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                        Transform Content
+                    `;
+                    transformBtn.disabled = false;
+                    lucide.createIcons();
+                }
+
+                const apigReqId = response.headers.get('Apigw-Requestid') || response.headers.get('apigw-requestid') || '—';
+                const responseText = await response.text();
+
+                jsonResponse.textContent = `HTTP ${response.status}\nApigw-RequestId: ${apigReqId}\n\n${responseText}`;
+
+                if (!response.ok) {
+                    statusText.textContent = `HTTP ${response.status} — check CORS/endpoint.`;
+                    return;
+                }
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch {
+                    statusText.textContent = 'Could not parse JSON response.';
+                    return;
+                }
+
+                const outputs = data.outputs || {};
+                const actualLengths = data.lengths_actual || {};
+                const requestedLengths = data.lengths_requested || [];
+                
+                const outputsEs = data.outputs_es || {};
+                const actualLengthsEs = data.lengths_actual_es || {};
+
+                results = Object.keys(outputs)
+                    .map(key => {
+                        const target = Number(key.replace('len_', ''));
+                        return {
+                            k: key,
+                            target,
+                            text: outputs[key],
+                            actualLength: actualLengths[key] ?? outputs[key].trim().length,
+                            textEs: outputsEs[key] || null,
+                            actualLengthEs: actualLengthsEs[key] ?? (outputsEs[key] ? outputsEs[key].trim().length : 0),
+                        };
+                    })
+                    .sort((a, b) => a.target - b.target);
+
+                renderResults();
+
+                const passCount = results.filter(result => isWithinTarget(result.actualLength, result.target)).length;
+                const durationMs = endTime - startTime;
+
+                targetLengths.textContent = requestedLengths.join(', ') || '—';
+                successRate.textContent = `${passCount}/${results.length}`;
+                
+                const tokensEn = data.tokens_en || {};
+                const tokensEs = data.tokens_es || {};
+                const tokenTotals = data.token_totals_all || {};
+                
+                if (tokensEn.input_tokens || tokensEs.input_tokens || tokenTotals.input_tokens) {
+                    const tokenInfo = document.createElement('div');
+                    tokenInfo.className = 'col-span-full mt-4 p-4 bg-gradient-to-r from-blue-900/20 to-green-900/20 rounded-lg border border-blue-500/30';
+                    tokenInfo.innerHTML = `
+                        <p class="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4"></i>
+                            Token Usage Analytics
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+                            <div class="space-y-1">
+                                <p class="text-cyan-400 font-semibold">English Processing</p>
+                                <p class="text-white">Input: ${tokensEn.input_tokens || 0} tokens</p>
+                                <p class="text-white">Output: ${tokensEn.output_tokens || 0} tokens</p>
+                                <p class="text-white">Attempts: ${tokensEn.attempts || 0}</p>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-orange-400 font-semibold">Spanish Processing</p>
+                                <p class="text-white">Input: ${tokensEs.input_tokens || 0} tokens</p>
+                                <p class="text-white">Output: ${tokensEs.output_tokens || 0} tokens</p>
+                                <p class="text-white">Attempts: ${tokensEs.attempts || 0}</p>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-green-400 font-semibold">Total Usage</p>
+                                <p class="text-white">Input: ${tokenTotals.input_tokens || 0} tokens</p>
+                                <p class="text-white">Output: ${tokenTotals.output_tokens || 0} tokens</p>
+                                <p class="text-white">Attempts: ${tokenTotals.attempts || 0}</p>
+                            </div>
+                        </div>
+                    `;
+                    diagnostics.appendChild(tokenInfo);
+                }
+                
+                diagnostics.classList.remove('hidden');
+                diagnostics.classList.add('grid');
+
+                statusText.textContent = `Completed in ${durationMs.toFixed(0)} ms · RequestId ${apigReqId}`;
+            }
+        }
+
+        // Event listeners for new functionality
+        singleModeBtn.addEventListener('click', switchToSingleMode);
+        batchModeBtn.addEventListener('click', switchToBatchMode);
+        downloadBtn.addEventListener('click', downloadResults);
+
+        // File drop zone events
+        fileDropZone.addEventListener('click', () => excelFileInput.click());
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('dragover');
+        });
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('dragover');
+        });
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+        excelFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        // Event listeners
+        transformBtn.addEventListener('click', handleTransform);
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                handleTransform();
+            }
+        });
+
+        // Initialize icons
+        lucide.createIcons();
     </script>
 </body>
 </html>
